@@ -1,9 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:todoapp/FireBase/FireBaseAuthCodes.dart';
+import 'package:todoapp/FireBase/FireStoreHandler.dart';
+import 'package:todoapp/FireBase/Model/User.dart' as MyUser;
 import 'package:todoapp/Style/Reusable_Components/CustomButton.dart';
 import 'package:todoapp/Style/Reusable_Components/CustomFormField.dart';
 import 'package:todoapp/Style/validation.dart';
+import 'package:todoapp/UI/Home/Widgets/HomeScreen.dart';
+import 'package:todoapp/UI/Login/LoginScreen.dart';
+
+import '../../Style/DialogUtils.dart';
 
 class RegisterScreen extends StatefulWidget {
   static const String routeName="RegisterScreen";
@@ -19,6 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController EmailController;
   late TextEditingController PasswordController;
   late TextEditingController PasswordConfirmationController;
+  late TextEditingController AgeController;
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
   @override
   void initState() {
@@ -29,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     EmailController = TextEditingController();
     PasswordController = TextEditingController();
     PasswordConfirmationController = TextEditingController();
+    AgeController = TextEditingController();
     super.initState();
 
   }
@@ -40,6 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     EmailController.dispose();
     PasswordController.dispose();
     PasswordConfirmationController.dispose();
+    AgeController.dispose();
     super.dispose();
 
   }
@@ -59,6 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Scaffold(
         appBar: AppBar(
           backgroundColor:Colors.transparent ,
+          elevation: 0,
           title:const Text(
             "Create Account"
           ),
@@ -83,9 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: "Full Name",
                   controller:fullNameController,
                   keyboard: TextInputType.name,
-                  validator:(value){
-                   return  Validation.fullNameValidator(value,"Enter your Full Name");
-                    },
+                  validator:(value)=>Validation.fullNameValidator(value,"Enter your Full Name")
               ),
               SizedBox(
                 height: height*0.02,
@@ -96,6 +104,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: EmailController,
                   validator:Validation.EmailAddressValidator,
 
+              ),
+              SizedBox(
+                height: height*0.02,
+              ),
+              CustomFormField(
+                labelText: "Age",
+                keyboard: TextInputType.number,
+                controller: AgeController,
+                  validator:(value)=>Validation.fullNameValidator(value,"Please Enter your Age")
               ),
               SizedBox(
                 height: height*0.02,
@@ -153,17 +170,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if(formKey.currentState!.validate()){
       //Create Acc
       try{
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        DialogUtils.ShowLoading(context);
+        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: EmailController.text,
-          password: PasswordController.text);
+          password: PasswordController.text
+        );
+        await FireStoreHandler.createUser(
+            MyUser.User(
+                id: userCredential.user!.uid,
+                email: EmailController.text,
+                age: int.parse(AgeController.text),
+              fullName: fullNameController.text,
+
+            )
+         );
+        Navigator.pop(context);
+        DialogUtils.showMessageDialog(
+            context: context,
+            err: "Account Created Successfully",
+            positiveActionTitle: "Ok",
+            positiveActionClick: (context){
+              Navigator.of(context).pushNamedAndRemoveUntil(HomeScreen.routeName,(route)=>false);
+              ;
+            }
+        );
           }on FirebaseAuthException catch(e){
+        Navigator.pop(context);
         if (e.code == FireBaseAuthCodes.weakPass) {
-          print('The password provided is too weak.');
+          DialogUtils.showMessageDialog(
+              context: context,
+              err: "Weak Password",
+              positiveActionTitle: "Ok",
+              negativeActionClick: (context){
+                Navigator.pop(context);
+              }
+          );
         } else if (e.code == FireBaseAuthCodes.emailAlreadyInUse) {
-          print('The account already exists for that email.');
+          DialogUtils.showMessageDialog(
+              context: context,
+              err:  "Email Already in Use",
+            positiveActionTitle: "Ok",
+            positiveActionClick:(context){
+                Navigator.pop(context);
+              }
+
+          );
         }
-      }catch(e){
-          print(e);
       }
     }
   }

@@ -4,9 +4,11 @@ import 'package:todoapp/FireBase/FireBaseAuthCodes.dart';
 import 'package:todoapp/Style/AppColors.dart';
 import 'package:todoapp/UI/Register/RegisterScreen.dart';
 
+import '../../Style/DialogUtils.dart';
 import '../../Style/Reusable_Components/CustomButton.dart';
 import '../../Style/Reusable_Components/CustomFormField.dart';
 import '../../Style/validation.dart';
+import '../Home/Widgets/HomeScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName="loginScreen";
@@ -49,7 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor:Colors.transparent ,
+          backgroundColor:Colors.transparent,
+          elevation: 0,
           title:const Text(
               "Login"
           ),
@@ -91,7 +94,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-
                 SizedBox(
                   height: height*0.06,
                 ),
@@ -113,64 +115,46 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    )
-
+     )
     ),
-    );
+   );
   }
   LoginFunction()async{
     if(formKey.currentState!.validate()){
       //Login account
       try{
-        showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              content: SizedBox(
-                    height: MediaQuery.of(context).size.height*0.1,
-                child: const Center(
-                    child: CircularProgressIndicator()
-                ),
-              ),
-            ),
-        );
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: EmailController.text,
-            password: PasswordController.text
-        );
-        Navigator.pop(context);
+
+
+          DialogUtils.ShowLoading(context);
+          UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+              email: EmailController.text,
+              password: PasswordController.text
+          );
+          Navigator.pop(context);
+          Navigator.of(context).pushNamedAndRemoveUntil(HomeScreen.routeName, (route)=>false);
+
       }on FirebaseAuthException catch(e){
         Navigator.pop(context);
         if(e.code==FireBaseAuthCodes.userNotFound){
-          showDialog(
+          DialogUtils.showMessageDialog(
               context: context,
-              builder: (context)=>AlertDialog(
-                content:Text(FireBaseAuthCodes.userNotFound),
-                actions: [
-                  TextButton(onPressed: (){
-                    Navigator.pop(context);
-                    },
-                      child: const Text("Ok")
-                  )
-                ],
-              )
+              err: "User Not Found For That Email",
+              positiveActionTitle: "Ok",
+              positiveActionClick: (context) {
+                  Navigator.pop(context);
+              },
           );
         }else if(e.code==FireBaseAuthCodes.wrongPassword){
-          showDialog(
-              context: context,
-              builder: (context)=>AlertDialog(
-                content:const Text(FireBaseAuthCodes.wrongPassword),
-                actions: [
-                  TextButton(onPressed: (){
-                    Navigator.pop(context);
-                  },
-                      child: const Text("Ok")
-                  )
-                ],
-              )
+          DialogUtils.showMessageDialog(
+            context: context,
+            err:"Invalid Password",
+            positiveActionTitle: "Ok",
+            positiveActionClick: (context) {
+              Navigator.pop(context);
+            },
           );
         }
       }
-
     }
   }
 }

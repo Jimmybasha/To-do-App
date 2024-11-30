@@ -6,9 +6,18 @@ class CustomFormField extends StatefulWidget {
   final TextInputType keyboard ;
   final TextEditingController controller;
   final validationFunc validator;
+  final int? maxlines;
   bool invisiblePassword;
 
-  CustomFormField({required this.labelText ,required this.keyboard , this.invisiblePassword=false,required this.controller,required this.validator });
+  CustomFormField({
+    required this.labelText ,
+    required this.keyboard ,
+    this.invisiblePassword=false,
+    required this.controller,
+    required this.validator ,
+    this.maxlines=1
+
+  });
 
   @override
   State<CustomFormField> createState() => _CustomFormFieldState();
@@ -22,6 +31,7 @@ class _CustomFormFieldState extends State<CustomFormField> {
     return TextFormField(
       validator: widget.validator ,
       keyboardType: widget.keyboard,
+      maxLines: widget.maxlines,
       obscureText:
       widget.invisiblePassword?
       isVisible?
